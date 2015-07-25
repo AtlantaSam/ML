@@ -1,7 +1,12 @@
-## Project
+## Coursera Practical Maching Learning Project
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har.
+
+Summary Report: An accurate model (.9962) has been created using Random Forest. Random Forests were chosen because unlike single decision trees which are likely to suffer from high variance or high bias (depending on how they are tuned) Random Forests use averaging to find a natural balance between the two extremes. Since they have very few parameters to tune and can be used quite efficiently with default parameter settings (i.e. they are effectively non-parametric) Random Forests are good to use as a first cut when you don't know the underlying model, or when you need to produce a decent model under severe time pressure. I have used cross-validation (the confusion matrix) to provide a visual of the accuracy of this outstanding model.
+
+Note to my classmates: don't chase down the HTML to view this document - see it here http://rpubs.com/Atlanta/95284
 
 ### Libraries
-
 ```{r}
 library(caret)
 library(ggplot2)
@@ -16,21 +21,21 @@ library(doParallel)
 #download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv','pml-test.csv',method='curl')
 ```
 
-### Tidy Data
-Convert all blank(‘“”’), ‘#DIV/0’ and ‘NA’ values are converted to ‘NA’.
+### Tidy Data - Clean up the data.
+Convert all blank(‘“”’), ‘#DIV/0’ and ‘NA’ -  values are converted to ‘NA’.
 ```{r}
 trainingSrc   <- read.csv('pml-training.csv', na.strings=c("NA","#DIV/0!", ""))
 testSrc       <- read.csv('pml-test.csv' , na.strings=c("NA", "#DIV/0!", ""))
 ```
 
-We decided to leave columns having no more than 60% of NA values:
+Leave columns having no more than 60% of NA values:
 ```{r}
 goodVars    <- which((colSums(!is.na(trainingSrc)) >= 0.6*nrow(trainingSrc)))
 trainingSrc <- trainingSrc[,goodVars]
 testSrc     <- testSrc[,goodVars]
 ```
 
-Some minor fixes to test set are needed to perform well with random forests.
+Minor fixes to test set help the performance of random forests.
 ```{r}
 # remove problem id
 testSrc <- testSrc[-ncol(testSrc)]
@@ -38,13 +43,13 @@ testSrc <- testSrc[-ncol(testSrc)]
 testSrc$new_window <- factor(testSrc$new_window, levels=c("no","yes"))
 ```
 
-Remove X and cvtd_timestamp colums from the dataset since they are not relevant
+To aid performance, remove X and cvtd_timestamp colums from the dataset - they are not relevant
 ```{r}
 trainingSrc <- trainingSrc[,-c(1,5)]
 testSrc     <- testSrc[,-c(1,5)]
 ```
 
-### Partition Data
+### Partition the Data
 ```{r}
 inTraining  <- createDataPartition(trainingSrc$classe, p = 0.6, list = FALSE)
 training    <- trainingSrc[inTraining, ]
@@ -58,8 +63,7 @@ class <- training$classe
 data  <- training[-ncol(training)]
 ```
 
-We will use Parallel Random Forest algorithm to fit the model. Note that for random forests there is no need for cross-validation to get an unbiased estimate of the test set error. It is estimated internally during the fitting process.
-
+Will use Parallel Random Forest algorithm to fit the model. Note that for random forests there is no need for cross-validation to get an unbiased estimate of the test set error. It is estimated internally during the fitting process. Regardless, I have included a Confusion Matrix for your viewing pleasure.
 ```{r}
 registerDoParallel()
 rf <- train(data, class, method="parRF", 
@@ -88,3 +92,19 @@ Let’s have a look at the accuracy
 ```{r}
 confMatrix$overall[1]
 ```
+This model is very accurate!
+
+### Submit
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+answers <- predict(rf, testSrc)
+pml_write_files(answers)
+```
+
