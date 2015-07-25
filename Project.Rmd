@@ -72,7 +72,19 @@ rf
 ```
 
 Let’s plot importance of the model variables:
-
 ```{r}
 plot(varImp(rf))
+```
+
+### Confusion Matrix
+Predict on testing set and generate the confusion matrix for the testing set
+```{r}
+testingPredictions <- predict(rf, newdata=testing)
+confMatrix <- confusionMatrix(testingPredictions,testing$classe)
+confMatrix
+```
+
+Let’s have a look at the accuracy
+```{r}
+confMatrix$overall[1]
 ```
